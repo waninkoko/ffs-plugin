@@ -1,7 +1,7 @@
 /*
  * FFS plugin for Custom IOS.
  *
- * Copyright (C) 2009-2010 Waninkoko.
+ * Copyright (C) 2008-2010 Waninkoko, WiiGator.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,24 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-	.section .init, "x"
+#ifndef _MAIN_H_
+#define _MAIN_H_
 
-	.code 32
-	.thumb_func
+#include "types.h"
 
-	.global _start
-_start:
-	ldr	r3, =FFS_EmulateCmd + 1
-	bx	r3
+/* IOS info structure */
+typedef struct {
+	/* Syscall base */
+	u32 syscall;
+
+	/* Module versions */
+	u32 dipVersion;
+	u32 esVersion;
+	u32 ffsVersion;
+	u32 iopVersion;
+} iosInfo;
+
+/* Externs */
+extern iosInfo ios;
+
+#endif

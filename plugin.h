@@ -23,8 +23,10 @@
 #include "types.h"
 
 /* Mode codes */
-#define MODE_SD		0x01
-#define MODE_USB	0x02
+#define MODE_NONE	0x0
+#define MODE_SD		0x1
+#define MODE_USB	0x2
+#define MODE_FULL	0x100
 
 
 /* Config structure */
@@ -32,7 +34,8 @@ struct ffsConfig {
 	/* Mode */
 	u32 mode;
 
-	/* That's all. */
+	/* FS path */
+	char path[FAT_MAXPATH];
 };
 
 /* Extern */

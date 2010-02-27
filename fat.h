@@ -32,16 +32,11 @@ typedef struct {
 } fstats;
 
 /* Constants */
-#define FAT_MAXPATH	255
+#define FAT_MAXPATH	256
 
 
 /* Prototypes */
 s32 FAT_Init(void);
-s32 FAT_Open(const char *path, u32 mode);
-s32 FAT_Close(s32 fd);
-s32 FAT_Read(s32 fd, void *buffer, u32 len);
-s32 FAT_Write(s32 fd, void *buffer, u32 len);
-s32 FAT_Seek(s32 fd, u32 where, u32 whence);
 s32 FAT_CreateDir(const char *dirpath);
 s32 FAT_CreateFile(const char *filepath);
 s32 FAT_ReadDir(const char *dirpath, void *outbuf, u32 *entries);

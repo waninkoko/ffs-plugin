@@ -17,6 +17,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "fat.h"
 #include "ffs_calls.h"
 #include "ioctl.h"
@@ -24,133 +26,147 @@
 #include "isfs.h"
 #include "plugin.h"
 #include "syscalls.h"
-#include "tools.h"
 #include "types.h"
 
 /* Global config */
 struct ffsConfig config = { 0 };
 
+/* Variables */
+static char openPath[FAT_MAXPATH] ATTRIBUTE_ALIGN(32);
+s32         openMode;
+
+
+u16 __FFS_GetUID(void)
+{
+	/* Return user ID */
+	return 0x1001;
+}
+
+u16 __FFS_GetGID(void)
+{
+	/* Return title ID */
+	return *(u16 *)0x00000004;
+}
 
 void __FFS_GeneratePath(const char *oldpath, char *newpath)
 {
-	/* Set path prefix */
-	switch (config.mode) {
-	case MODE_SD:
-		os_strcpy(newpath, "sd:");
-		break;
-	case MODE_USB:
-		os_strcpy(newpath, "usb:");
-		break;
-	}
+	/* Set prefix */
+	if (config.mode & MODE_SD)
+		strcpy(newpath, "sd:");
+	if (config.mode & MODE_USB)
+		strcpy(newpath, "usb:");
 
 	/* Generate path */
-	os_strcat(newpath, oldpath);
+	strcat(newpath, config.path);
+	strcat(newpath, oldpath);
+}
+
+u32 __FFS_CheckPath(const char *path)
+{
+	/* Ignore 'launch.sys' */
+	if (!strncmp(path, "/tmp/launch.sys", 15)) return 1;
+
+	/* Check path */
+	if (config.mode & MODE_FULL) {
+		if (!strncmp(path, "/dev", 4))              return 1;
+		if (!strncmp(path, "/", 1))                 return 0;
+	} else {
+		if (!strncmp(path, "/ticket/00010001", 16)) return 0;
+		if (!strncmp(path, "/ticket/00010005", 16)) return 0;
+		if (!strncmp(path, "/title/00010000",  15)) return 0;
+		if (!strncmp(path, "/title/00010001",  15)) return 0;
+		if (!strncmp(path, "/title/00010004",  15)) return 0;
+		if (!strncmp(path, "/title/00010005",  15)) return 0;
+		if (!strncmp(path, "/tmp", 4))              return 0;
+		if (!strncmp(path, "/sys/disc.sys", 13))    return 0;
+		if (!strncmp(path, "/sys/uid.sys",  12))    return 0;
+	}
+
+	return 1;
+}
+
+char *__FFS_SyscallOpen(char *path, s32 mode)
+{
+	/* Set mode */
+	openMode = mode;
+
+	/* Emulation mode */
+	if (config.mode & 0xFF) {
+		u32 ret;
+
+		/* SD mode */
+		if (config.mode & MODE_SD) {
+			/* Disable '/dev/sdio' */
+			if (!strncmp(path, "/dev/sdio", 9)) {
+				strcpy(openPath, "/dev/null");
+
+				/* Return path */
+				return openPath;
+			}
+		}
+
+		/* Check path */
+		ret = __FFS_CheckPath(path);
+		if (!ret) {
+			/* Generate path */
+			__FFS_GeneratePath(path, openPath);
+
+			/* Return path */
+			return openPath;
+		}
+	}
+
+	/* Return path */
+	return path;
 }
 
 
 s32 FFS_Open(ipcmessage *message)
 {
-	char *devpath = message->open.device;
-	s32   ret;
-
 	FFS_printf("FFS_Open(): %s\n", devpath);
-
-	/* Open file */
-	if (config.mode && os_strncmp(devpath, "/dev/", 5)) {
-		char path[FAT_MAXPATH];
-
-		/* Generate path */
-		__FFS_GeneratePath(devpath, path);
-
-		/* Open file */
-		ret = FAT_Open(path, 3);
-	} else
-		ret = FFS_HandleOpen(message);
-
-	return ret;
+	
+	return -6;
 }
 
 s32 FFS_Close(ipcmessage *message)
 {
-	s32 fd = message->fd;
-	s32 ret;
-
 	FFS_printf("FFS_Close(): %d\n", fd);
 
-	/* Close file */
-	if (fd >= 0 && fd <= 16)
-		ret = FAT_Close(fd);
-	else
-		ret = FFS_HandleClose(message);
-
-	return ret;
+	return -6;
 }
 
 s32 FFS_Read(ipcmessage *message)
 {
-	void *buffer = message->read.data;
-	u32   len    = message->read.length;
-
-	s32 fd = message->fd;
-	s32 ret;
-
 	FFS_printf("FFS_Read(): %d (buffer: 0x%08x, len: %d\n", fd, (u32)buffer, len);
 
-	/* Read file */
-	if (fd >= 0 && fd <= 16)
-		ret = FAT_Read(fd, buffer, len);
-	else
-		ret = FFS_HandleRead(message);
-
-	return ret;
+	return -6;
 }
 
 s32 FFS_Write(ipcmessage *message)
 {
-	void *buffer = message->write.data;
-	u32   len    = message->write.length;
-
-	s32 fd = message->fd;
-	s32 ret;
-
 	FFS_printf("FFS_Write(): %d (buffer: 0x%08x, len: %d)\n", fd, (u32)buffer, len);
 
-	/* Write file */
-	if (fd >= 0 && fd <= 16)
-		ret = FAT_Write(fd, buffer, len);
-	else
-		ret = FFS_HandleWrite(message);
-
-	return ret;
+	return -6;
 }
 
 s32 FFS_Seek(ipcmessage *message)
 {
-	u32 where  = message->seek.offset;
-	u32 whence = message->seek.origin;
-
-	s32 fd = message->fd;
-	s32 ret;
-
 	FFS_printf("FFS_Seek(): %d (where: %d, whence: %d)\n", fd, where, whence);
-
-	/* Seek file */
-	if (fd >= 0 && fd <= 16)
-		ret = FAT_Seek(fd, where, whence);
-	else
-		ret = FFS_HandleSeek(message);
-
-	return ret;
+	
+	return -6;
 }
 
-s32 FFS_Ioctl(ipcmessage *message)
+s32 FFS_Ioctl(ipcmessage *message, u32 *flag)
 {
 	u32 *inbuf = message->ioctl.buffer_in;
 	u32 *iobuf = message->ioctl.buffer_io;
 	u32  iolen = message->ioctl.length_io;
+	u32  cmd   = message->ioctl.command;
 
-	u32  cmd = message->ioctl.command;
-	s32  ret;
+	s32 ret;
+
+	/* Set flag */
+	*flag = config.mode;
 
 	/* Parse comamnd */
 	switch (cmd) {
@@ -160,11 +176,18 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_CreateDir(): %s\n", attr->filepath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(attr->filepath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char newpath[FAT_MAXPATH];
 
-			/* Genereate path */
+			/* Generate path */
 			__FFS_GeneratePath(attr->filepath, newpath);
 
 			/* Create directory */
@@ -180,11 +203,18 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_CreateFile(): %s\n", attr->filepath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(attr->filepath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char newpath[FAT_MAXPATH];
 
-			/* Genereate path */
+			/* Generate path */
 			__FFS_GeneratePath(attr->filepath, newpath);
 
 			/* Create file */
@@ -200,11 +230,18 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_Delete(): %s\n", filepath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(filepath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char newpath[FAT_MAXPATH];
 
-			/* Genereate path */
+			/* Generate path */
 			__FFS_GeneratePath(filepath, newpath);
 
 			/* Delete */
@@ -220,8 +257,15 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_Rename(): %s -> %s\n", rename->filepathOld, rename->filepathNew);
 
+		/* Check path */
+		ret = __FFS_CheckPath(rename->filepathOld);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char oldpath[FAT_MAXPATH];
 			char newpath[FAT_MAXPATH];
 
@@ -231,7 +275,11 @@ s32 FFS_Ioctl(ipcmessage *message)
 			__FFS_GeneratePath(rename->filepathOld, oldpath);
 			__FFS_GeneratePath(rename->filepathNew, newpath);
 
-			/* Get stats */
+			/* Compare paths */
+			if (!strcmp(oldpath, newpath))
+				return FAT_Stat(oldpath, NULL);
+
+			/* Check new path */
 			ret = FAT_Stat(newpath, &filestat);
 			if (ret >= 0) {
 				/* Delete directory contents */
@@ -254,7 +302,7 @@ s32 FFS_Ioctl(ipcmessage *message)
 		FFS_printf("FFS_GetStats():\n");
 
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			fsstats *stats = (fsstats *)iobuf;
 
 			char   fatpath[FAT_MAXPATH];
@@ -268,8 +316,8 @@ s32 FFS_Ioctl(ipcmessage *message)
 			if (ret < 0)
 				return ret;
 
-			/* Invalidate cache */
-			os_memset(iobuf, 0, iolen);
+			/* Clear buffer */
+			memset(iobuf, 0, iolen);
 
 			/* Fill stats */
 			stats->block_size  = vfs.f_bsize;
@@ -288,23 +336,10 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 	/** Get file stats **/
 	case IOCTL_ISFS_GETFILESTATS: {
-		s32 fd = message->fd;
-
 		FFS_printf("FFS_GetFileStats(): %d\n", fd);
 
-		/* Device mode */
-		if (config.mode) {
-			fstats *stats = (fstats *)iobuf;
-
-			/* Invalid descriptor */
-			if (fd < 0 || fd > 16)
-				break;
-
-			/* Get file stats */
-			ret = FAT_GetFileStats(fd, stats);
-
-			return ret;
-		}
+		/* Disable flag */
+		*flag = 0;
 
 		break;
 	}
@@ -315,8 +350,15 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_GetAttributes(): %s\n", path);
 
+		/* Check path */
+		ret = __FFS_CheckPath(path);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			fsattr *attr = (fsattr *)iobuf;
 			char    newpath[FAT_MAXPATH];
 
@@ -329,12 +371,15 @@ s32 FFS_Ioctl(ipcmessage *message)
 				return ret;
 
 			/* Fake attributes */
-			attr->owner_id   = 0;
-			attr->group_id   = 0;
+			attr->owner_id   = __FFS_GetUID();
+			attr->group_id   = __FFS_GetGID();
 			attr->ownerperm  = ISFS_OPEN_RW;
 			attr->groupperm  = ISFS_OPEN_RW;
 			attr->otherperm  = ISFS_OPEN_RW;
 			attr->attributes = 0;
+
+			/* Copy filepath */
+			memcpy(attr->filepath, path, ISFS_MAXPATH);
 
 			/* Flush cache */
 			os_sync_after_write(iobuf, iolen);
@@ -351,8 +396,15 @@ s32 FFS_Ioctl(ipcmessage *message)
 
 		FFS_printf("FFS_SetAttributes(): %s\n", attr->filepath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(attr->filepath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char newpath[FAT_MAXPATH];
 
 			/* Generate path */
@@ -370,7 +422,7 @@ s32 FFS_Ioctl(ipcmessage *message)
 		FFS_printf("FFS_Format():\n");
 
 		/* Device mode */
-		if (config.mode)
+		if (config.mode & 0xFF)
 			return 0;
 
 		break;
@@ -379,10 +431,16 @@ s32 FFS_Ioctl(ipcmessage *message)
 	/** Set FFS mode **/
 	case IOCTL_ISFS_SETMODE: {
 		u32 val = inbuf[0];
+	
+		/* Set flag */
+		*flag = 1;
 
 		/* FAT mode enabled */
 		if (val) {
 			char fatpath[FAT_MAXPATH];
+
+			/* Set fs path */
+			strcpy(config.path, "");
 
 			/* Generate path */
 			__FFS_GeneratePath("/tmp", fatpath);
@@ -406,17 +464,21 @@ s32 FFS_Ioctl(ipcmessage *message)
 		break;
 	}
 
-	/* FFS IOCTL handler */
-	return FFS_HandleIoctl(message);
+	/* Call handler */
+	return -6;
 }
 
-s32 FFS_Ioctlv(ipcmessage *message)
+s32 FFS_Ioctlv(ipcmessage *message, u32 *flag)
 {
 	ioctlv *vector = message->ioctlv.vector;
+	u32     inlen  = message->ioctlv.num_in;
 	u32     iolen  = message->ioctlv.num_io;
+	u32     cmd    = message->ioctlv.command;
 
-	u32 cmd = message->ioctlv.command;
 	s32 ret;
+
+	/* Set flag */
+	*flag = config.mode;
 
 	/* Parse comamnd */
 	switch (cmd) {
@@ -426,8 +488,15 @@ s32 FFS_Ioctlv(ipcmessage *message)
 
 		FFS_printf("FFS_Readir(): %s\n", dirpath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(dirpath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
 			char *outbuf = NULL;
 			u32  *outlen = NULL;
 			u32   buflen = 0;
@@ -449,8 +518,14 @@ s32 FFS_Ioctlv(ipcmessage *message)
 
 			/* Read directory */
 			ret = FAT_ReadDir(newpath, outbuf, &entries);
-			if (ret >= 0)
+			if (ret >= 0) {
 				*outlen = entries;
+				os_sync_after_write(outlen, sizeof(u32));
+			}
+
+			/* Flush cache */
+			if (outbuf)
+				os_sync_after_write(outbuf, buflen);
 
 			return ret;
 		}
@@ -464,87 +539,77 @@ s32 FFS_Ioctlv(ipcmessage *message)
 
 		FFS_printf("FFS_GetUsage(): %s\n", dirpath);
 
+		/* Check path */
+		ret = __FFS_CheckPath(dirpath);
+		if (ret) {
+			*flag = 0;
+			break;
+		}
+
 		/* Device mode */
-		if (config.mode) {
+		if (config.mode & 0xFF) {
+			char newpath[FAT_MAXPATH];
+
 			u32 *blocks = (u32 *)vector[1].data;
 			u32 *inodes = (u32 *)vector[2].data;
 
-			/* Set fake values */
-			*blocks = 1;
-			*inodes = 1;
+			/* Generate path */
+			__FFS_GeneratePath(dirpath, newpath);
+
+			/* Get usage */
+			ret = FAT_GetUsage(newpath, blocks, inodes);
 
 			/* Flush cache */
 			os_sync_after_write(blocks, sizeof(u32));
 			os_sync_after_write(inodes, sizeof(u32));
 
-			return 0;
+			return ret;
 		}
 
 		break;
 	}
 
-	default:
-		break;
-	}
+	/** Set FFS mode **/
+	case IOCTL_ISFS_SETMODE: {
+		u32   val  = *(u32 *)vector[0].data;
+		char *path = "";
+	
+		/* Set flag */
+		*flag = 1;
 
-	/* FFS IOCTLV handler */
-	return FFS_HandleIoctlv(message);
-}
+		/* Get path */
+		if (inlen > 1)
+			path = (char *)vector[1].data;
 
+		/* FAT mode enabled */
+		if (val) {
+			char fatpath[FAT_MAXPATH];
 
-s32 FFS_EmulateCmd(ipcmessage *message)
-{
-	s32 ret = 0;
+			/* Set fs path */
+			strcpy(config.path, path);
 
-	/* Parse IPC command */
-	switch (message->command) {
-	case IOS_OPEN: {
-		/* Filesystem open */
-		ret = FFS_Open(message);
-		break;
-	}
+			/* Generate path */
+			__FFS_GeneratePath("/tmp", fatpath);
 
-	case IOS_CLOSE: {
-		/* Filesystem close */
-		ret = FFS_Close(message);
-		break;
-	}
+			/* Initialize FAT */
+			ret = FAT_Init();
+			if (ret < 0)
+				return ret;
 
-	case IOS_READ: {
-		/* Filesystem read */
-		ret = FFS_Read(message);
-		break;
-	}
+			/* Delete "/tmp" */
+			FAT_DeleteDir(fatpath);
+		}
 
-	case IOS_WRITE: {
-		/* Filesystem write */
-		ret = FFS_Write(message);
-		break;
-	}
+		/* Set FFS mode */
+		config.mode = val;
 
-	case IOS_SEEK: {
-		/* Filesystem seek */
-		ret = FFS_Seek(message);
-		break;
-	}
-
-	case IOS_IOCTL: {
-		/* Filesystem IOCTL */
-		ret = FFS_Ioctl(message);
-		break;
-	}
-
-	case IOS_IOCTLV: {
-		/* Filesystem IOCTLV */
-		ret = FFS_Ioctlv(message);
-		break;
+		return 0;
 	}
 
 	default:
-		ret = IPC_EINVAL;
+		break;
 	}
 
-	FFS_printf("FFS Return: %d\n", ret);
-
-	return ret;
+	/* Call handler */
+	return -6;
 }

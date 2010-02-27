@@ -1,7 +1,7 @@
 /*
  * FFS plugin for Custom IOS.
  *
- * Copyright (C) 2009-2010 Waninkoko.
+ * Copyright (C) 2008-2010 Waninkoko, WiiGator.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,25 +17,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FFS_CALLS_H_
-#define _FFS_CALLS_H_
+#ifndef _PATCHES_H_
+#define _PATCHES_H_
 
 #include "types.h"
 
-/* Debug */
-#ifdef DEBUG
-void FFS_printf(const char *fmt, ...);
-#else
-# define FFS_printf(fmt, ...)
-#endif
-
-/* FFS command handlers */
-s32 FFS_HandleOpen  (void *data);
-s32 FFS_HandleClose (void *data);
-s32 FFS_HandleRead  (void *data);
-s32 FFS_HandleWrite (void *data);
-s32 FFS_HandleSeek  (void *data);
-s32 FFS_HandleIoctl (void *data);
-s32 FFS_HandleIoctlv(void *data);
+/* Prototypes */
+void Patch_FfsModule(u32 version);
+void Patch_IopModule(u32 version);
 
 #endif
+

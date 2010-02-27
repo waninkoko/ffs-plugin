@@ -17,16 +17,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _FFS_CALLS_H_
+#define _FFS_CALLS_H_
 
-	.text
-	.align 2
-	.code  16
+#include "types.h"
 
-	.thumb_func
-	.global syscall_write
-syscall_write:
-	mov	r2, lr
-	mov	r1, r0
-	mov	r0, #4
-	svc	0xab
-	bx	r2
+/* Debug */
+#ifdef DEBUG
+void FFS_printf(const char *fmt, ...);
+#else
+# define FFS_printf(fmt, ...)
+#endif
+
+/* FFS handlers */
+s32 _ffs_unk   (void *data);
+s32 _ffs_open  (void *data);
+s32 _ffs_close (void *data);
+s32 _ffs_read  (void *data);
+s32 _ffs_write (void *data);
+s32 _ffs_seek  (void *data);
+s32 _ffs_ioctl (void *data);
+s32 _ffs_ioctlv(void *data);
+
+/* Syscall open hook */
+s32 _syscall_open(char *path, s32 mode);
+
+#endif
