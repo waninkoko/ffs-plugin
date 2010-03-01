@@ -48,6 +48,39 @@ u16 __FFS_GetGID(void)
 	return *(u16 *)0x00000004;
 }
 
+void __FFS_AppendPath(char *dst, const char *src)
+{
+	u32 cnt;
+
+	/* Move to end */
+	dst += strlen(dst);
+
+	/* Copy path */
+	for (cnt = 0; src[cnt]; cnt++) {
+		char c = src[cnt];
+
+		/* Check character */
+		switch (c) {
+		case '"':
+		case '*':
+		case ':':
+		case '<':
+		case '>':
+		case '?':
+		case '|':
+			/* Replace character */
+			c = '_';
+			break;
+		}
+
+		/* Copy character */
+		dst[cnt] = c;
+	}
+
+	/* End of string */
+	dst[cnt] = 0;
+}
+
 void __FFS_GeneratePath(const char *oldpath, char *newpath)
 {
 	/* Set prefix */
@@ -57,8 +90,8 @@ void __FFS_GeneratePath(const char *oldpath, char *newpath)
 		strcpy(newpath, "usb:");
 
 	/* Generate path */
-	strcat(newpath, config.path);
-	strcat(newpath, oldpath);
+	__FFS_AppendPath(newpath, config.path);
+	__FFS_AppendPath(newpath, oldpath);
 }
 
 u32 __FFS_CheckPath(const char *path)
