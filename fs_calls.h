@@ -17,27 +17,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PLUGIN_H_
-#define _PLUGIN_H_
+#ifndef _FS_CALLS_H_
+#define _FS_CALLS_H_
 
 #include "types.h"
 
-/* Mode codes */
-#define MODE_SDHC		0x01
-#define MODE_USB		0x02
-#define MODE_FULL		0x100
+/* Debug */
+#ifdef DEBUG
+void FS_printf(const char *fmt, ...);
+#else
+# define FS_printf(fmt, ...)
+#endif
 
+/* FFS handlers */
+s32 fs_unk   (void *data);
+s32 fs_open  (void *data);
+s32 fs_close (void *data);
+s32 fs_read  (void *data);
+s32 fs_write (void *data);
+s32 fs_seek  (void *data);
+s32 fs_ioctl (void *data);
+s32 fs_ioctlv(void *data);
 
-/* Config structure */
-struct fsConfig {
-	/* Mode */
-	u32 mode;
+/* Syscall open hook */
+s32 syscall_open(char *path, s32 mode);
 
-	/* FS path */
-	char path[FAT_MAXPATH];
-};
-
-/* Extern */
-extern struct fsConfig config;
- 
 #endif

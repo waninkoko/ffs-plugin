@@ -17,7 +17,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ffs_calls.h"
+#include "fs_calls.h"
 #include "tools.h"
 
 /* Macros */
@@ -35,22 +35,23 @@
 
 
 /* FFS jump table */
-static u32 ffs_jmpTable[8]=
+static u32 fsTable[8]=
 {
-	(u32)_ffs_unk,
-	(u32)_ffs_open,
-	(u32)_ffs_close,
-	(u32)_ffs_read,
-	(u32)_ffs_write,
-	(u32)_ffs_seek,
-	(u32)_ffs_ioctl,
-	(u32)_ffs_ioctlv,
+	(u32)fs_unk,
+	(u32)fs_open,
+	(u32)fs_close,
+	(u32)fs_read,
+	(u32)fs_write,
+	(u32)fs_seek,
+	(u32)fs_ioctl,
+	(u32)fs_ioctlv,
 };
 
 /* Addresses */
-u32 addr_callOpen = 0;
-u32 addr_jmpTable = 0;
-u32 addr_reentry  = 0;
+u32 addrSysOpen = 0;
+u32 addrPrintf  = 0;
+u32 addrReentry = 0;
+u32 addrTable   = 0;
 
 
 void Patch_FfsModule(u32 version)
@@ -59,33 +60,36 @@ void Patch_FfsModule(u32 version)
 	/** 12/24/08 13:48:17 **/
 	case 0x49523DA1:
 		/* Set addresses */
-		addr_jmpTable = *(u32 *)0x20005F38;
-		addr_reentry  = 0x20005F0A;
+		addrTable   = *(u32 *)0x20005F38;
+		addrPrintf  = 0x20006084 + 1;
+		addrReentry = 0x20005F0A;
 
 		/* Patch command handler */
-		Write32(0x20005F38, (u32)ffs_jmpTable);
+		Write32(0x20005F38, (u32)fsTable);
 
 		break;
 
 	/** 12/23/08 17:26:21 **/
 	case 0x49511F3D:
 		/* Set addresses */
-		addr_jmpTable = *(u32 *)0x200021D0;
-		addr_reentry  = 0x2000219C;
+		addrTable   = *(u32 *)0x200021D0;
+		addrPrintf  = 0x200060BC + 1;
+		addrReentry = 0x2000219C;
 
 		/* Patch command handler */
-		Write32(0x200021D0, (u32)ffs_jmpTable);
+		Write32(0x200021D0, (u32)fsTable);
 
 		break;
 
 	/** 11/24/08 15:36:10 **/
 	case 0x492AC9EA:
 		/* Set addresses */
-		addr_jmpTable = *(u32 *)0x200061B8;
-		addr_reentry  = 0x2000618A;
+		addrTable   = *(u32 *)0x200061B8;
+		addrPrintf  = 0x20006304 + 1;
+		addrReentry = 0x2000618A;
 
 		/* Patch command handler */
-		Write32(0x200061B8, (u32)ffs_jmpTable);
+		Write32(0x200061B8, (u32)fsTable);
 
 		break;
 	}
@@ -97,36 +101,36 @@ void Patch_IopModule(u32 version)
 	/** 07/11/08 14:34:29 **/
 	case 0x48776F75:
 		/* Set addresses */
-		addr_callOpen = 0xFFFF2E5C;
+		addrSysOpen = 0xFFFF2E5C;
 
 		/* Patch syscall open */
 		Write32(0xFFFF2E50, 0x477846C0);
 		Write32(0xFFFF2E54, 0xE51FF004);
-		Write32(0xFFFF2E58, (u32)_syscall_open);
+		Write32(0xFFFF2E58, (u32)syscall_open);
 
 		break;
 
 	/** 12/23/08 17:28:32 **/
 	case 0x49511FC0:
 		/* Set addresses */
-		addr_callOpen = 0xFFFF2D4C;
+		addrSysOpen = 0xFFFF2D4C;
 
 		/* Patch syscall open */
 		Write32(0xFFFF2D40, 0x477846C0);
 		Write32(0xFFFF2D44, 0xE51FF004);
-		Write32(0xFFFF2D48, (u32)_syscall_open);
+		Write32(0xFFFF2D48, (u32)syscall_open);
 
 		break;
 
 	/** 11/24/08 15:39:12 **/
 	case 0x492ACAA0:
 		/* Set addresses */
-		addr_callOpen = 0xFFFF302C;
+		addrSysOpen = 0xFFFF302C;
 
 		/* Patch syscall open */
 		Write32(0xFFFF3020, 0x477846C0);
 		Write32(0xFFFF3024, 0xE51FF004);
-		Write32(0xFFFF3028, (u32)_syscall_open);
+		Write32(0xFFFF3028, (u32)syscall_open);
 
 		break;
 	}

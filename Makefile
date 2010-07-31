@@ -22,7 +22,8 @@ TARGET	=	ffs-plugin
 
 # Objects
 OBJS	=	fat.o			\
-		ffs_calls.o		\
+		fs_calls.o		\
+		fs_tools.o		\
 		ipc.o			\
 		main.o			\
 		patches.o		\

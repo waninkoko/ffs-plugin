@@ -28,7 +28,7 @@
 iosInfo ios = { 0 };
 
 
-s32 __FFS_System(u32 arg1, u32 arg2)
+s32 __FS_System(u32 arg1, u32 arg2)
 {
 	u32 perms;
 
@@ -59,7 +59,7 @@ int main(void)
 	Swi_GetIosInfo(&ios);
 
 	/* Initialize plugin */
-	Swi_CallFunc((void *)__FFS_System, NULL, NULL);
+	Swi_CallFunc((void *)__FS_System, NULL, NULL);
 
 	return 0;
 }

@@ -17,29 +17,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FFS_CALLS_H_
-#define _FFS_CALLS_H_
+#ifndef _FS_TOOLS_H_
+#define _FS_TOOLS_H_
 
 #include "types.h"
 
-/* Debug */
-#ifdef DEBUG
-void FFS_printf(const char *fmt, ...);
-#else
-# define FFS_printf(fmt, ...)
-#endif
 
-/* FFS handlers */
-s32 _ffs_unk   (void *data);
-s32 _ffs_open  (void *data);
-s32 _ffs_close (void *data);
-s32 _ffs_read  (void *data);
-s32 _ffs_write (void *data);
-s32 _ffs_seek  (void *data);
-s32 _ffs_ioctl (void *data);
-s32 _ffs_ioctlv(void *data);
-
-/* Syscall open hook */
-s32 _syscall_open(char *path, s32 mode);
+/* Prototypes */
+u16  FS_GetUID(void);
+u16  FS_GetGID(void);
+u32  FS_CheckPath(const char *path);
+void FS_GeneratePath(const char *oldpath, char *newpath);
 
 #endif

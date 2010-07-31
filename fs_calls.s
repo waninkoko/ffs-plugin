@@ -18,98 +18,102 @@
  */
 
 
+	.align 4
+
+/*
+ * FFS functions
+ */
+        .code 32
+        .global FS_printf
+FS_printf:
+        stmfd   sp!, {r7, lr}
+        ldr     r7, =addrPrintf
+        ldr     r7, [r7]
+        blx     r7
+        ldmfd   sp!, {r7, lr}
+        bx      lr
+
+
 /*
  * FFS handlers
  */
-	.text
-
 	.align 4
-	.code 16
+
 	.thumb
-	.global _ffs_unk
-_ffs_unk:
-	ldr     r0, =addr_jmpTable
+	.global fs_unk
+fs_unk:
+	ldr     r0, =addrTable
 	ldr	r0, [r0]
 	nop
 	ldr	r0, [r0, #0]
 	nop
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_open
-_ffs_open:
+	.global fs_open
+fs_open:
 	add	r0, r4, #0
 	push	{r1-r7}
-	bl	FFS_Open
+	bl	FS_Open
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #4]
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_close
-_ffs_close:
+	.global fs_close
+fs_close:
 	add	r0, r4, #0
 	push	{r1-r7}
-	bl	FFS_Close
+	bl	FS_Close
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #8]
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_read
-_ffs_read:
+	.global fs_read
+fs_read:
 	add	r0, r4, #0
 	push	{r1-r7}
-	bl	FFS_Read
+	bl	FS_Read
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #12]
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_write
-_ffs_write:
+	.global fs_write
+fs_write:
 	add	r0, r4, #0
 	push	{r1-r7}
-	bl	FFS_Write	
+	bl	FS_Write	
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #16]
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_seek
-_ffs_seek:
+	.global fs_seek
+fs_seek:
 	add	r0, r4, #0
 	push	{r1-r7}
-	bl	FFS_Seek
+	bl	FS_Seek
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #20]
 	pop	{r1-r7}
@@ -118,49 +122,48 @@ _ffs_seek:
 	.align 4
 	.code 16
 	.thumb
-	.global _ffs_ioctl
-_ffs_ioctl:
+	.global fs_ioctl
+fs_ioctl:
 	add	r0, r4, #0
 	push	{r1-r7}
 	push	{r0}
 	mov	r1, sp
-	bl	FFS_Ioctl
+	bl	FS_Ioctl
 	pop	{r3}
 	cmp	r3, #0
-	bne	_ffs_exit	
+	bne	fs_exit	
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #24]
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
 	.thumb
-	.global _ffs_ioctlv
-_ffs_ioctlv:
+	.global fs_ioctlv
+fs_ioctlv:
 	add	r0, r4, #0
 	push	{r1-r7}
 	push	{r0}
 	mov	r1, sp
-	bl	FFS_Ioctlv
+	bl	FS_Ioctlv
 	pop	{r3}
 	cmp	r3, #0
-	bne	_ffs_exit	
+	bne	fs_exit	
 	cmp	r0, #0
-	bge	_ffs_exit
-	ldr	r0, =addr_jmpTable
+	bge	fs_exit
+	ldr	r0, =addrTable
 	ldr	r3, [r0]
 	ldr	r0, [r3, #28]
 	pop	{r1-r7}
 	mov	pc, r0
 
-_ffs_exit:
+fs_exit:
+	bl	FS_Exit
 	pop	{r1-r7}
 	add	r1, r0, #0
-	ldr	r0, =addr_reentry
+	ldr	r0, =addrReentry
 	ldr	r0, [r0]
 	mov	pc, r0
 
@@ -172,28 +175,27 @@ _ffs_exit:
 	.code 32
 	.arm
 
-	.global _syscall_open
-_syscall_open:
+	.global syscall_open
+syscall_open:
 	stmfd	sp!, {r4-r7, lr}
-	stmfd	sp!, {r2-r3}
+	stmfd	sp!, {r1-r3}
 	nop
-	ldr	r4, =(_syscall_open_thumb + 1)
+	ldr	r4, =(_syscall_open + 1)
 	bx	r4
 
 	.align 4
 	.code 16
+
 	.thumb
-_syscall_open_thumb:
-	bl	__FFS_SyscallOpen
-	ldr	r2, =openMode
-	ldr	r1, [r2]
-	pop	{r2-r3}
+_syscall_open:
+	bl	__FS_SyscallOpen
+	pop	{r1-r3}
 	mov	r7, r11
 	mov	r6, r10
 	mov	r5, r9
 	mov	r4, r8
 	push	{r4-r7}
-	ldr	r4, =addr_callOpen
+	ldr	r4, =addrSysOpen
 	ldr	r4, [r4]
 	nop
 	mov	pc, r4

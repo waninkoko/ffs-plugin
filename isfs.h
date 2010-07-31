@@ -66,7 +66,7 @@ typedef struct {
 	u32 unk3;
 	u32 unk4;
 	u32 free_inodes;
-	u32 unk6;
+	u32 unk5;
 } fsstats;
 
 #endif
