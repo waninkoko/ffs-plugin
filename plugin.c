@@ -359,6 +359,8 @@ s32 FS_Ioctl(ipcmessage *message, u32 *flag)
 	/** Set FS mode **/
 	case IOCTL_ISFS_SETMODE: {
 		u32 val = inbuf[0];
+
+		FS_printf("FS_SetMode(): %d\n", val);
 	
 		/* Set flag */
 		*flag = 1;
@@ -454,7 +456,6 @@ s32 FS_Ioctlv(ipcmessage *message, u32 *flag)
 			/* Flush cache */
 			if (outbuf)
 				os_sync_after_write(outbuf, buflen);
-
 
 			return ret;
 		}

@@ -99,6 +99,7 @@ void Patch_IopModule(u32 version)
 {
 	switch (version) {
 	/** 07/11/08 14:34:29 **/
+	/** 03/01/10 03:28:58 **/
 	case 0x48776F75:
 		/* Set addresses */
 		addrSysOpen = 0xFFFF2E5C;
@@ -122,8 +123,23 @@ void Patch_IopModule(u32 version)
 
 		break;
 
+	/** 03/01/10 03:13:17 **/
+	case 0x4B8B30CD:
+		/* Set addresses */
+		addrSysOpen = 0xFFFF2E10;
+
+		/* Patch syscall open */
+		Write32(0xFFFF2E04, 0x477846C0);
+		Write32(0xFFFF2E08, 0xE51FF004);
+		Write32(0xFFFF2E0C, (u32)syscall_open);
+
+		break;
+
 	/** 11/24/08 15:39:12 **/
+	/** 06/03/09 07:49:12 **/
+	/** 03/03/10 10:43:18 **/
 	case 0x492ACAA0:
+	case 0x4B8E3D46:
 		/* Set addresses */
 		addrSysOpen = 0xFFFF302C;
 

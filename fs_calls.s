@@ -18,12 +18,16 @@
  */
 
 
-	.align 4
+	.text
 
 /*
  * FFS functions
  */
+
+#ifdef DEBUG
+	.align 4
         .code 32
+
         .global FS_printf
 FS_printf:
         stmfd   sp!, {r7, lr}
@@ -32,14 +36,17 @@ FS_printf:
         blx     r7
         ldmfd   sp!, {r7, lr}
         bx      lr
+#endif
 
 
 /*
  * FFS handlers
  */
 	.align 4
+	.code 16
 
 	.thumb
+
 	.global fs_unk
 fs_unk:
 	ldr     r0, =addrTable
@@ -49,7 +56,6 @@ fs_unk:
 	nop
 	mov	pc, r0
 
-	.thumb
 	.global fs_open
 fs_open:
 	add	r0, r4, #0
@@ -63,7 +69,6 @@ fs_open:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.thumb
 	.global fs_close
 fs_close:
 	add	r0, r4, #0
@@ -77,7 +82,6 @@ fs_close:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.thumb
 	.global fs_read
 fs_read:
 	add	r0, r4, #0
@@ -91,7 +95,6 @@ fs_read:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.thumb
 	.global fs_write
 fs_write:
 	add	r0, r4, #0
@@ -105,7 +108,6 @@ fs_write:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.thumb
 	.global fs_seek
 fs_seek:
 	add	r0, r4, #0
@@ -119,9 +121,6 @@ fs_seek:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.align 4
-	.code 16
-	.thumb
 	.global fs_ioctl
 fs_ioctl:
 	add	r0, r4, #0
@@ -140,7 +139,6 @@ fs_ioctl:
 	pop	{r1-r7}
 	mov	pc, r0
 
-	.thumb
 	.global fs_ioctlv
 fs_ioctlv:
 	add	r0, r4, #0
@@ -173,8 +171,8 @@ fs_exit:
  */
 	.align 4
 	.code 32
-	.arm
 
+	.arm
 	.global syscall_open
 syscall_open:
 	stmfd	sp!, {r4-r7, lr}
